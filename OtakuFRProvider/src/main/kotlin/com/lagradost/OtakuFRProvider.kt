@@ -1,16 +1,12 @@
 package com.lagradost
 
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 
-import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import org.jsoup.nodes.Element
 
-import me.xdrop.fuzzywuzzy.FuzzySearch
 import java.util.*
-import kotlin.collections.ArrayList
 
 class OtakuFRProvider : MainAPI() {
     override var mainUrl = "https://otakufr.co/"
@@ -20,9 +16,6 @@ class OtakuFRProvider : MainAPI() {
     override var lang = "fr" // fournisseur est en francais
     override val supportedTypes =
         setOf(TvType.Anime, TvType.AnimeMovie, TvType.OVA) // animes, animesfilms
-
-    private val nCharQuery = 10 // take the lenght of the query + nCharQuery
-    private val resultsSearchNbr = 50 // take only n results from search function
 
 
     /**
@@ -59,6 +52,12 @@ class OtakuFRProvider : MainAPI() {
             document.select("article.my-3 > div.card-body > div.row >div.text-center> figure.m-0 > img")
                 .attr("src")
         var title = document.select("div.list > div.title").text() //
+        var dubstatus = if (title.contains("VF")) {
+            DubStatus.Dubbed
+        } else {
+            DubStatus.Subbed
+        }
+
         var dataUrl = ""
         var link_video = ""
         /////////////////////////////////////
@@ -89,8 +88,10 @@ class OtakuFRProvider : MainAPI() {
             if (infosList!!.contains("ilm")) mediaType = TvType.AnimeMovie
         }
 
-        val description = document.selectFirst("div.synopsis > p")?.text()
-
+        val description = document.selectFirst("div.synop")?.text()?.split("Autre Nom")?.get(0).toString()
+        val textInfo = document.select("ul.list-unstyled").text()
+        val regexYear = Regex("""Sortie initiale[\:] (\d*)""")
+        val year = regexYear.find(textInfo)?.groupValues?.get(1)?.toInt()
 
         if (mediaType == TvType.AnimeMovie) {
             return newMovieLoadResponse(
@@ -101,6 +102,7 @@ class OtakuFRProvider : MainAPI() {
             ) { // retourne les informations du film
                 this.posterUrl = poster
                 this.plot = description
+                this.year = year
             }
         } else  // an anime
         {
@@ -111,8 +113,9 @@ class OtakuFRProvider : MainAPI() {
             ) {
                 this.posterUrl = poster
                 this.plot = description
+                this.year = year
                 addEpisodes(
-                    DubStatus.Subbed,
+                    dubstatus,
                     episodes.reversed()
                 )
             }
@@ -175,6 +178,11 @@ class OtakuFRProvider : MainAPI() {
         var posterUrl = figure.select(" a > img").attr("src")
         val title = select(" div >div > div > a").text()
         val link = figure.select("a").attr("href")
+        var dubstatus = if (title.contains("VF")) {
+            EnumSet.of(DubStatus.Dubbed)
+        } else {
+            EnumSet.of(DubStatus.Subbed)
+        }
 
         return newAnimeSearchResponse(
             title,
@@ -183,7 +191,7 @@ class OtakuFRProvider : MainAPI() {
             false,
         ) {
             this.posterUrl = posterUrl
-            this.dubStatus = EnumSet.of(DubStatus.Subbed)
+            this.dubStatus = dubstatus
         }
 
     }
@@ -195,6 +203,11 @@ class OtakuFRProvider : MainAPI() {
         val url = select(" div > a").attr("href")
         val document = app.get(url).document
         val link = document.select("ol.breadcrumb > li:nth-child(2) > a").attr("href")
+        var dubstatus = if (title.contains("VF")) {
+            EnumSet.of(DubStatus.Dubbed)
+        } else {
+            EnumSet.of(DubStatus.Subbed)
+        }
 
         return newAnimeSearchResponse(
             title,
@@ -203,7 +216,7 @@ class OtakuFRProvider : MainAPI() {
             false,
         ) {
             this.posterUrl = posterUrl
-            this.dubStatus = EnumSet.of(DubStatus.Subbed)
+            this.dubStatus = dubstatus
         }
 
     }
@@ -213,6 +226,11 @@ class OtakuFRProvider : MainAPI() {
         var posterUrl = figure.select("img").attr("src")
         val title = select("div.titles").text()
         val link = this.attr("href")
+        var dubstatus = if (title.contains("VF")) {
+            EnumSet.of(DubStatus.Dubbed)
+        } else {
+            EnumSet.of(DubStatus.Subbed)
+        }
 
         return newAnimeSearchResponse(
             title,
@@ -221,13 +239,13 @@ class OtakuFRProvider : MainAPI() {
             false,
         ) {
             this.posterUrl = posterUrl
-            this.dubStatus = EnumSet.of(DubStatus.Subbed)
+            this.dubStatus = dubstatus
         }
 
     }
 
     override val mainPage = mainPageOf(
-        Pair("$mainUrl", "Top 10 des animes de la semaine"),
+        Pair("$mainUrl", "Top 10 hebdomadaire"),
         Pair("$mainUrl/page/", "Nouveaux épisodes"),
         Pair("$mainUrl/en-cours/page/", "Animes en cours"),
         Pair("$mainUrl/termine/page/", "Animes terminés"),
