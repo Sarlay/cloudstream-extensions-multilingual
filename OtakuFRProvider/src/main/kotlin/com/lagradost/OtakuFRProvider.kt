@@ -256,15 +256,15 @@ class OtakuFRProvider : MainAPI() {
         val categoryName = request.name
         var url = request.data + page
         var cssSelector = ""
-        if (categoryName.contains("Top 10") && page <= 1) {
-            cssSelector = "div.block-most-watched:nth-child(2) > div.list-group > a.list-group-item"
+        if (categoryName.contains("Top") && page <= 1) {
+            cssSelector = "div.block-most-watched"
         }
         val document = app.get(url).document
 
         val home = when (!categoryName.isNullOrBlank()) {
             request.name.contains("Animes"), request.name.contains("Films") -> document.select("div.list > >article")
                 .mapNotNull { article -> article.toSearchResponse() }
-            request.name.contains("Top 10") -> document.select(cssSelector)
+            categoryName.contains("Top") -> document.select(cssSelector)[1].select("div.list-group > a.list-group-item")
                 .mapNotNull { item -> item.toTopTen() }
 
             else -> document.select("div.section-1 > article")
