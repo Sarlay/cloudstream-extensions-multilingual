@@ -235,7 +235,7 @@ class NekosamaProvider : MainAPI() {
         var year:Int?=null
         if (isinfosList) {
             if (infosList!!.contains("movie")) mediaType = TvType.AnimeMovie
-             year =regexYear.find(infosList)!!.groupValues.get(1).toInt()
+            year =regexYear.find(infosList)!!.groupValues.get(1).toInt()
         }
 
         val description = document.selectFirst("div.synopsis > p")?.text()

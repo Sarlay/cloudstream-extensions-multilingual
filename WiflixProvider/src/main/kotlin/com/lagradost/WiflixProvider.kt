@@ -29,7 +29,7 @@ class WiflixProvider : MainAPI() {
      **/
     override suspend fun search(query: String): List<SearchResponse> {
         val link =
-            "$mainUrl/index.php?do=search&subaction=search&search_start=0&full_search=1&result_from=1&story=$query&titleonly=3&searchuser=&replyless=0&replylimit=0&searchdate=0&beforeafter=after&sortby=date&resorder=desc&showposts=0&catlist%5B%5D=0"  // search'
+            "$mainUrl/index.php?do=search&subaction=search&search_start=0&full_search=1&result_from=1&story=$query&titleonly=3&searchuser=&replyless=0&replylimit=0&searchdate=0&beforeafter=after&sortby=date&resorder=desc&showposts=0&catlist%5B%5D=0" // search'
         val document =
             app.post(link).document // app.get() permet de télécharger la page html avec une requete HTTP (get)
         val results = document.select("div#dle-content > div.clearfix")
@@ -201,18 +201,26 @@ class WiflixProvider : MainAPI() {
             document.select("div.blocfr")
         val episodeVostfrfound =
             document.select("div.blocvostfr")
+        var lang = document.select("[itemprop=inLanguage]").text()
+        var flag = "\uD83C\uDDE8\uD83C\uDDF5"
 
         val cssCodeForPlayer = if (episodeFrfound.text().contains("Episode")) {
             "div.ep${numeroEpisode}vf > a"
+
         } else if (episodeVostfrfound.text().contains("Episode")) {
             "div.ep${numeroEpisode}vs > a"
+
         } else {
             "div.linkstab > a"
         }
 
+        if (cssCodeForPlayer.contains("vs") || lang.contains("VOSTFR")) {
+            flag =  " \uD83D\uDCDC \uD83C\uDDEC\uD83C\uDDE7"
+        } //flag =" \uD83C\uDDEC\uD83C\uDDE7"  drapeau anglais
+
 
         document.select("$cssCodeForPlayer").apmap { player -> // séléctione tous les players
-            var playerUrl = "https"+player.attr("href").replace("(.*)https".toRegex(), "")
+            var playerUrl = "https" + player.attr("href").replace("(.*)https".toRegex(), "")
             if (!playerUrl.isNullOrBlank())
                 if (playerUrl.contains("dood")) {
                     playerUrl = playerUrl.replace("doodstream.com", "dood.wf")
@@ -225,7 +233,7 @@ class WiflixProvider : MainAPI() {
                 callback.invoke(
                     ExtractorLink( // ici je modifie le callback pour ajouter des informations, normalement ce n'est pas nécessaire
                         link.source,
-                        link.name + "",
+                        link.name + flag,
                         link.url,
                         link.referer,
                         getQualityFromName("HD"),
