@@ -349,7 +349,7 @@ class MacIPTVProvider : MainAPI() {
             "$mainUrl/portal.php?type=itv&action=get_genres&JsHttpRequest=1-xml"//&force_ch_link_check=&JsHttpRequest=1-xml
         var response_0 = app.get(url, headers = headerMac)
         val reponseJSON_0 = response_0.parsed<JsonGetGenre>()
-        reponseJSON_0.js.forEach { it ->
+        reponseJSON_0.js.apmap { it ->
             val idGenre = it.id
             val categoryTitle = it.title.toString()
 
@@ -357,7 +357,7 @@ class MacIPTVProvider : MainAPI() {
                 var page_i = 1;
                 val url =
                     "$mainUrl/portal.php?type=itv&action=get_ordered_list&genre=$idGenre&force_ch_link_check=&fav=0&sortby=number&hd=0&p=$page_i&JsHttpRequest=1-xml&from_ch_id=0"
-                var response = app.get(url, headers = headerMac)
+                var response = app.get(url, headers = headerMac, timeout = 3)
                 var reponseJSON = response.parsed<Root>()
                 val total_items = reponseJSON?.js?.totalItems
                 val max_page_items = reponseJSON?.js?.maxPageItems?.toDouble()
@@ -375,10 +375,10 @@ class MacIPTVProvider : MainAPI() {
 
                     }
                     page_i++
-                    delay(100)
+                    //delay(100)
                     val url =
                         "$mainUrl/portal.php?type=itv&action=get_ordered_list&genre=$idGenre&force_ch_link_check=&fav=0&sortby=number&hd=0&p=$page_i&JsHttpRequest=1-xml&from_ch_id=0"
-                    response = app.get(url, headers = headerMac)
+                    response = app.get(url, headers = headerMac, timeout = 3)
                     reponseJSON = if (response.text.takeLast(2) != "}}") {
                         tryParseJson<Root>("${response.text}}") ?: response.parsed()
                     } else {
@@ -423,7 +423,7 @@ class MacIPTVProvider : MainAPI() {
             if (categoryTitle.contains("FR")) {
                 var nameGenre = categoryTitle + " \uD83C\uDDE8\uD83C\uDDF5"
                 nameGenre = nameGenre.replace("FR ", "").trim()
-                arrayHomepage.add(HomePageList(nameGenre, home))
+                arrayHomepage.add(HomePageList(nameGenre, home,isHorizontalImages = true))
             }
 
         }
