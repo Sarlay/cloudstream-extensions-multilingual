@@ -34,10 +34,7 @@ class MacIPTVProvider : MainAPI() {
             "Cookie" to mac_adresse,
         )// matrix-ott 00:1a:79:a7:9e:ed;June 20, 2023, 3:51 am
 
-      init {
-          // Needs to clear cookies between sessions to generate new cookies.
-          CookieManager.getInstance().removeAllCookies(null)
-      }
+      
     private fun getCloseMatches(sequence: String, items: Collection<String>): List<String> {
         val a = sequence.trim().lowercase()
 
