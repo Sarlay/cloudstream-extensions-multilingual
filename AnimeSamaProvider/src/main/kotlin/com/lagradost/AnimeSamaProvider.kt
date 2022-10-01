@@ -136,6 +136,7 @@ class AnimeSamaProvider : MainAPI() {
     private val regexAllcontentEpisode =
         Regex("""\[[^\]]*]""")
     private val regexAllLinkepisode = Regex("""'[^']*',""")
+    private val regexCreateEp =Regex("""for \(var i = ([+-]?(?=\.\d|\d)(?:\d+)?(?:\.?\d*))(?:[eE]([+-]?\d+))?""")
     override suspend fun load(url: String): LoadResponse {
         val episodes = ArrayList<Episode>()
         val episodesLink = ArrayList<String>()
@@ -146,17 +147,16 @@ class AnimeSamaProvider : MainAPI() {
         }
         val getScript = app.get(url_scriptEp)
         val text_script = getScript.text
-        var isMovie = false
         val script =
             text_script
         val resultsAllContent = regexAllcontentEpisode.findAll(script)
         //////////////////////////////////////
-        var dataUrl = ""
         /////////////////////////////////////
         var idx_Ep = 0
         var idx_Epfirstcontent = 0
         var firstcontent = true
         var oldNbrContent = 0
+        var link_poster = ""
         resultsAllContent.forEach { content_i ->
             val contentEpisodeLink = content_i.groupValues[0]
             val AllLinkEpisodeFromContent_i = regexAllLinkepisode.findAll(contentEpisodeLink)
@@ -194,28 +194,29 @@ class AnimeSamaProvider : MainAPI() {
         }
         var episode_tite = ""//select#selectEps.episodes > option
 
-        val document = app.get(url).document
+        val html = app.get(url)
+        val document = html.document
         val title =
             document.select("p.soustitreaccueil.syntitreanime").text()
         var all_title = document.select("select#selectEps.episodes > option")
-        if (title.lowercase().contains("film")) {
-            isMovie = true
-        }
-        idx_Ep = 1 // episode from 1
-        var link_poster = ""
+
+        idx_Ep = regexCreateEp.find(html.text)?.groupValues?.get(1)?.toInt() ?: 1 // episode from 1
+
         episodesLink.forEach { link_video ->
             episode_tite ="Episode $idx_Ep"
-            if (isMovie) {
+            if (!all_title.isNullOrEmpty()) {
                 episode_tite = all_title[idx_Ep - 1].text()
             }
-
-            dataUrl = link_video
+           /* link_poster = when(!link_video.isNullOrBlank()){
+                link_video.contains("video.sibnet.ru") -> app.get(url).document.select("[property=og:image]").attr("content")
+                else -> ""
+            }*/
             episodes.add(
                 Episode(
                     link_video,
                     episode = idx_Ep,
                     name = episode_tite,
-                    posterUrl = link_poster
+                    posterUrl = link_poster // document.select("[property=og:image]") pour
 
                 )
 
