@@ -7,7 +7,7 @@ import org.jsoup.Jsoup
 
 
 open class Myvitop : MytvExtractor() {
-    override var mainUrl = "https://www.myvi.top/"
+    override val mainUrl = "https://www.myvi.top/"
     override val name: String = "MyVi_top"
     private val srcRegex = Regex("""PlayerLoader\.CreatePlayer\(\"v\=(.*)\\u0026tp""")  // would be possible to use the parse and find src attribute
     override val requiresReferer = false

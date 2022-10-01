@@ -1,12 +1,7 @@
 package com.lagradost
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.app
-import org.jsoup.Jsoup
 
-class Myvitop : MytvExtractor() {
-    override var mainUrl = "https://www.myvi.top/"
-    override val name: String = "MyVi_top"
-}
 
 open class MytvExtractor : ExtractorApi() {
     override val name: String = "MyVi_tv"
