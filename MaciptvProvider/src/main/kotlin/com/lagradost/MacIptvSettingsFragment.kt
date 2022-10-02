@@ -68,19 +68,26 @@ class MacIptvSettingsFragment(private val plugin: Plugin, val maciptvAPI: MacIpt
             ColorStateList.valueOf(view.context.colorFromAttribute(R.attr.white))
 
         // object : View.OnClickListener is required to make it compile because otherwise it used invoke-customs
-        infoView.setOnClickListener { openBrowser(maciptvAPI.createAccountUrl) }
+        infoView.setOnClickListener(object : View.OnClickListener {
+            override fun onClick(v: View?) {
+                openBrowser(maciptvAPI.createAccountUrl)
+            }
+        })
 
 
         loginTextView.text = view.context.resources.getString(R.string.login_format).format(
             maciptvAPI.name,
             view.context.resources.getString(R.string.account))
-        loginView.setOnClickListener {
-            val info = maciptvAPI.loginInfo()
-            if (info != null) {
-                showLoginInfo(activity, maciptvAPI, info)
-            } else {
-                addAccount(activity, maciptvAPI)
+
+        loginView.setOnClickListener(object : View.OnClickListener {
+            override fun onClick(v: View?) {
+                val info = maciptvAPI.loginInfo()
+                if (info != null) {
+                    showLoginInfo(activity, maciptvAPI, info)
+                } else {
+                    addAccount(activity, maciptvAPI)
+                }
             }
-        }
+        })
     }
 }
