@@ -12,9 +12,10 @@ import java.lang.Math.ceil
 
 
 class MacIPTVProvider : MainAPI() {
-    override var mainUrl =
-        "http://matrix-ott.tv:8080" //"http://ultra-box.club/mac=00%3A1A%3A79%3A6C%3ACD%3AC8"
-    private val mac_adresse = "mac=00:1A:79:A7:9E:ED"
+    override var mainUrl = "http://matrix-ott.tv:8080"
+    var mainUrl0 = mainUrl
+        //"http://matrix-ott.tv:8080" //"http://ultra-box.club/mac=00%3A1A%3A79%3A6C%3ACD%3AC8"
+    private val mac_adresse ="mac=00:1A:79:A7:9E:ED"// "mac=00:1A:79:A7:9E:ED"
     override var name = "BoxIPTV"
     override val hasQuickSearch = false // recherche rapide (optionel, pas vraimet utile)
     override val hasMainPage = true // page d'accueil (optionel mais encoragé)
@@ -28,10 +29,10 @@ class MacIPTVProvider : MainAPI() {
         const val ERROR_STRING = "No nginx url specified in the settings"
     }
     private fun getAuthHeader(): Map<String, String> {
-        val url = overrideUrl ?: "http://matrix-ott.tv:8080"
+        val url = overrideUrl ?: mainUrl0// "http://matrix-ott.tv:8080"
         mainUrl = url
         if (mainUrl == "NONE" || mainUrl.isNullOrBlank()) {
-            mainUrl= "http://matrix-ott.tv:8080"
+            mainUrl= mainUrl0//"http://matrix-ott.tv:8080"
         }
 
         val localCredentials = loginMac
