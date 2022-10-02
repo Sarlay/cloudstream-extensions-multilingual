@@ -19,7 +19,7 @@ import com.lagradost.cloudstream3.ui.settings.SettingsAccount.Companion.addAccou
 import com.lagradost.cloudstream3.utils.UIHelper.colorFromAttribute
 
 
-class MacIptvSettingsFragment(private val plugin: Plugin, val nginxApi: MacIptvAPI) :
+class MacIptvSettingsFragment(private val plugin: Plugin, val maciptvAPI: MacIptvAPI) :
     BottomSheetDialogFragment() {
 
     override fun onCreateView(
@@ -68,25 +68,19 @@ class MacIptvSettingsFragment(private val plugin: Plugin, val nginxApi: MacIptvA
             ColorStateList.valueOf(view.context.colorFromAttribute(R.attr.white))
 
         // object : View.OnClickListener is required to make it compile because otherwise it used invoke-customs
-        infoView.setOnClickListener(object : View.OnClickListener {
-            override fun onClick(v: View?) {
-                openBrowser(nginxApi.createAccountUrl)
-            }
-        })
+        infoView.setOnClickListener { openBrowser(maciptvAPI.createAccountUrl) }
 
 
         loginTextView.text = view.context.resources.getString(R.string.login_format).format(
-            nginxApi.name,
+            maciptvAPI.name,
             view.context.resources.getString(R.string.account))
-        loginView.setOnClickListener(object : View.OnClickListener {
-            override fun onClick(v: View?) {
-                val info = nginxApi.loginInfo()
-                if (info != null) {
-                    showLoginInfo(activity, nginxApi, info)
-                } else {
-                    addAccount(activity, nginxApi)
-                }
+        loginView.setOnClickListener {
+            val info = maciptvAPI.loginInfo()
+            if (info != null) {
+                showLoginInfo(activity, maciptvAPI, info)
+            } else {
+                addAccount(activity, maciptvAPI)
             }
-        })
+        }
     }
 }

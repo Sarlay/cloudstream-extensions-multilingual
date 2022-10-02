@@ -52,7 +52,7 @@ class MacIptvAPI(index: Int) : InAppAuthAPIManager(index) {
             MacIPTVProvider.loginMac = null
             return
         }
-        MacIPTVProvider.overrideUrl = data.server?.removeSuffix("/") + "/"
+        MacIPTVProvider.overrideUrl = data.server?.removeSuffix("/")
         MacIPTVProvider.loginMac = data.password ?: ""
     }
 
