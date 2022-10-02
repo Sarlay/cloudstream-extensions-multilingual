@@ -27,7 +27,7 @@ class MacIPTVProviderPlugin : Plugin() {
         this.openSettings = {
             val activity = it as? AppCompatActivity
             if (activity != null) {
-                val frag = IptvboxSettingsFragment(this, iptvboxApi)
+                val frag = MacIptvSettingsFragment(this, iptvboxApi)
                 frag.show(activity.supportFragmentManager, iptvboxApi.name)
             }
         }
