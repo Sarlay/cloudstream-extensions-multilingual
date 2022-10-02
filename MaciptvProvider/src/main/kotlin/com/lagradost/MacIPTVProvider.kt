@@ -12,8 +12,6 @@ import java.lang.Math.ceil
 
 
 class MacIPTVProvider : MainAPI() {
-    override var mainUrl =
-        "http://matrix-ott.tv:8080" //"http://ultra-box.club/mac=00%3A1A%3A79%3A6C%3ACD%3AC8"
     private val mac_adresse = "mac=00:1A:79:A7:9E:ED"
     override var name = "BoxIPTV"
     override val hasQuickSearch = false // recherche rapide (optionel, pas vraimet utile)
@@ -21,29 +19,29 @@ class MacIPTVProvider : MainAPI() {
     override var lang = "fr" // fournisseur est en francais
     override val supportedTypes =
         setOf(TvType.Live) // live
+
     companion object {
-        var companionName = "Nginx"
         var loginMac: String? = null
         var overrideUrl: String? = null
-        const val ERROR_STRING = "No nginx url specified in the settings"
     }
+
     private fun getAuthHeader(): Map<String, String> {
         val url = overrideUrl ?: "http://matrix-ott.tv:8080"
         mainUrl = url
-        if (mainUrl == "NONE" || mainUrl.isNullOrBlank()) {
+        if (mainUrl == "NONE" || mainUrl.isBlank()) {
             mainUrl= "http://matrix-ott.tv:8080"
         }
 
         val localCredentials = loginMac
         if (localCredentials == null || localCredentials.trim() == "") {
-            return   mapOf(
+            return  mapOf(
                 "Cookie" to mac_adresse,
                 "User-Agent" to "Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 250 Safari/533.3",
             )
         }
 
        val headerMac =  mapOf(
-           "Cookie" to localCredentials,
+           "Cookie" to "mac=$localCredentials",
            "User-Agent" to "Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 250 Safari/533.3",
        )
         return headerMac
