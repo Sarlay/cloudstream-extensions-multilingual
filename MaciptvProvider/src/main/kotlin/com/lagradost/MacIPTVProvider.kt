@@ -6,7 +6,6 @@ import com.lagradost.cloudstream3.*
 import okhttp3.Interceptor
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 
 import java.lang.Math.ceil
@@ -14,27 +13,49 @@ import java.lang.Math.ceil
 
 class MacIPTVProvider : MainAPI() {
     override var mainUrl =
-        "http://matrix-ott.tv:8080/mac=00%3A1A%3A79%3AA7%3A9E%3AED" //"http://ultra-box.club/mac=00%3A1A%3A79%3A6C%3ACD%3AC8"
-    private val getreal_url = Regex("""([^\"].*)\/""")
-    private val getmac_adresse = Regex("""(mac.*[^\"])""")
-    private val real_mainUrl = getreal_url.find(mainUrl)!!.groupValues.get(1)
-    private val mac_adresse = getmac_adresse.find(mainUrl)!!.groupValues.get(1)
+        "http://matrix-ott.tv:8080" //"http://ultra-box.club/mac=00%3A1A%3A79%3A6C%3ACD%3AC8"
+    private val mac_adresse = "mac=00:1A:79:A7:9E:ED"
     override var name = "BoxIPTV"
     override val hasQuickSearch = false // recherche rapide (optionel, pas vraimet utile)
     override val hasMainPage = true // page d'accueil (optionel mais encoragé)
     override var lang = "fr" // fournisseur est en francais
     override val supportedTypes =
         setOf(TvType.Live) // live
+    companion object {
+        var companionName = "Nginx"
+        var loginMac: String? = null
+        var overrideUrl: String? = null
+        const val ERROR_STRING = "No nginx url specified in the settings"
+    }
+    private fun getAuthHeader(): Map<String, String> {
+        val url = overrideUrl ?: "http://matrix-ott.tv:8080"
+        mainUrl = url
+        if (mainUrl == "NONE" || mainUrl.isNullOrBlank()) {
+            mainUrl= "http://matrix-ott.tv:8080"
+        }
 
-    /*   private val headerMac = mapOf(
-           "Cookie" to "mac=00%3A1A%3A79%3A6C%3ACD%3AC8"
-       )*/ //Ultrabox
-    private val headerMac =
+        val localCredentials = loginMac
+        if (localCredentials == null || localCredentials.trim() == "") {
+            return   mapOf(
+                "Cookie" to mac_adresse,
+                "User-Agent" to "Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 250 Safari/533.3",
+            )
+        }
+
+       val headerMac =  mapOf(
+           "Cookie" to localCredentials,
+           "User-Agent" to "Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 250 Safari/533.3",
+       )
+        return headerMac
+    }
+
+   /* private val headerMac =
         mapOf(
             "Cookie" to mac_adresse,
-        )// matrix-ott 00:1a:79:a7:9e:ed;June 20, 2023, 3:51 am
+            "User-Agent" to "Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 250 Safari/533.3",
+        )*/// matrix-ott 00:1a:79:a7:9e:ed;June 20, 2023, 3:51 am
 
-      
+
     private fun getCloseMatches(sequence: String, items: Collection<String>): List<String> {
         val a = sequence.trim().lowercase()
 
@@ -66,7 +87,7 @@ class MacIPTVProvider : MainAPI() {
                 searchResutls.add(
                     LiveSearchResponse(
                         media.title,
-                        real_mainUrl,
+                        mainUrl,
                         media.title,
                         TvType.Live,
                         media.url_image,
@@ -139,12 +160,13 @@ class MacIPTVProvider : MainAPI() {
         var title = ""
         var posterUrl = ""
         var description = ""
+        val header= getAuthHeader()
         for (media in arraymediaPlaylist) {
             val keyId = "/-${media.id}-"
             if (url.contains(keyId)) {
                 val epg_url =
-                    "$real_mainUrl/portal.php?type=itv&action=get_short_epg&ch_id=${media.ch_id}&size=10&JsHttpRequest=1-xml" // descriptif
-                var response = app.get(epg_url, headers = headerMac)
+                    "$mainUrl/portal.php?type=itv&action=get_short_epg&ch_id=${media.ch_id}&size=10&JsHttpRequest=1-xml" // descriptif
+                var response = app.get(epg_url, headers = header)
                 description = getEpg(response.text)
                 link = media.url
                 title = media.title
@@ -156,8 +178,8 @@ class MacIPTVProvider : MainAPI() {
                     b_new = b.take(4)
                     if (a.take(4).contains(b_new) && media.tv_genre_id == channel.tv_genre_id) {
                         val epg_url =
-                            "$real_mainUrl/portal.php?type=itv&action=get_short_epg&ch_id=${channel.ch_id}&size=10&JsHttpRequest=1-xml" // descriptif
-                        var response = app.get(epg_url, headers = headerMac)
+                            "$mainUrl/portal.php?type=itv&action=get_short_epg&ch_id=${channel.ch_id}&size=10&JsHttpRequest=1-xml" // descriptif
+                        var response = app.get(epg_url, headers = header)
                         var description = getEpg(response.text)
                         val streamurl = channel.url
                         val channelname = channel.title
@@ -186,7 +208,7 @@ class MacIPTVProvider : MainAPI() {
                 title,
                 url,
                 this.name,
-                TvType.TvSeries,
+                TvType.Live,
                 showlist,
                 posterUrl
             )
@@ -219,11 +241,12 @@ class MacIPTVProvider : MainAPI() {
                 ) {
                     val chID = regexCode_ch.find(request.url.toString())!!.groupValues[1] + "_"
                     val TokenLink =
-                        "$real_mainUrl/portal.php?type=itv&action=create_link&cmd=ffmpeg%20http://localhost/ch/$chID&series=&forced_storage=0&disable_ad=0&download=0&force_ch_link_check=0&JsHttpRequest=1-xml"
+                        "$mainUrl/portal.php?type=itv&action=create_link&cmd=ffmpeg%20http://localhost/ch/$chID&series=&forced_storage=0&disable_ad=0&download=0&force_ch_link_check=0&JsHttpRequest=1-xml"
 
                     var link = ""
                     runBlocking {
-                        val getTokenLink = app.get(TokenLink, headers = headerMac).text
+                        val header= getAuthHeader()
+                        val getTokenLink = app.get(TokenLink, headers = header).text
                         val regexGetLink = Regex("""(http.*)\"\},""")
                         link = regexGetLink.find(getTokenLink)?.groupValues?.get(1).toString()
                             .replace(
@@ -250,10 +273,10 @@ class MacIPTVProvider : MainAPI() {
         callback: (ExtractorLink) -> Unit,
     ): Boolean {
 
-
+        val header= getAuthHeader()
         val TokenLink =
-            "$real_mainUrl/portal.php?type=itv&action=create_link&cmd=ffmpeg%20$data&series=&forced_storage=0&disable_ad=0&download=0&force_ch_link_check=0&JsHttpRequest=1-xml"
-        val getTokenLink = app.get(TokenLink, headers = headerMac).text
+            "$mainUrl/portal.php?type=itv&action=create_link&cmd=ffmpeg%20$data&series=&forced_storage=0&disable_ad=0&download=0&force_ch_link_check=0&JsHttpRequest=1-xml"
+        val getTokenLink = app.get(TokenLink, headers = header).text
         val regexGetLink = Regex("""(http.*)\"\},""")
         val link =
             regexGetLink.find(getTokenLink)?.groupValues?.get(1).toString().replace("""\""", "")
@@ -263,7 +286,7 @@ class MacIPTVProvider : MainAPI() {
                 name,
                 name,
                 link,
-                real_mainUrl,
+                mainUrl,
                 Qualities.Unknown.value,
                 isM3u8 = false,
             )
@@ -284,13 +307,6 @@ class MacIPTVProvider : MainAPI() {
         var tv_genre_id: String?,
         var ch_id: String?,
     )
-/*
-    val idGenre = 128
-    override val mainPage = mainPageOf(
-        Pair("18", "BEIN"),//Pour le sport c'est 128 pour utrabox et 18 pou matrix ott
-        *//*  Pair("18", "RMC"),
-
-    )*/
 
     data class Cmds(
 
@@ -397,20 +413,20 @@ class MacIPTVProvider : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val arrayHomepage = arrayListOf<HomePageList>()
-
+        val header= getAuthHeader()
         val url =
-            "$real_mainUrl/portal.php?type=itv&action=get_genres&JsHttpRequest=1-xml"//&force_ch_link_check=&JsHttpRequest=1-xml
-        var response_0 = app.get(url, headers = headerMac)
+            "$mainUrl/portal.php?type=itv&action=get_genres&JsHttpRequest=1-xml"//&force_ch_link_check=&JsHttpRequest=1-xml
+        var response_0 = app.get(url, headers = header)
         val reponseJSON_0 = response_0.parsed<JsonGetGenre>()
-        reponseJSON_0.js.apmap { it ->
-            val idGenre = it.id
-            val categoryTitle = it.title.toString()
+        reponseJSON_0.js.apmap { js ->
+            val idGenre = js.id
+            val categoryTitle = js.title.toString()
 
             if (idGenre!!.contains("""\d""".toRegex()) && categoryTitle.contains("FR")) {
                 var page_i = 1;
                 val url =
-                    "$real_mainUrl/portal.php?type=itv&action=get_ordered_list&genre=$idGenre&force_ch_link_check=&fav=0&sortby=number&hd=0&p=$page_i&JsHttpRequest=1-xml&from_ch_id=0"
-                var response = app.get(url, headers = headerMac, timeout = 3)
+                    "$mainUrl/portal.php?type=itv&action=get_ordered_list&genre=$idGenre&force_ch_link_check=&fav=0&sortby=number&hd=0&p=$page_i&JsHttpRequest=1-xml&from_ch_id=0"
+                var response = app.get(url, headers = header, timeout = 3)
                 var reponseJSON = response.parsed<Root>()
                 val total_items = reponseJSON?.js?.totalItems
                 val max_page_items = reponseJSON?.js?.maxPageItems?.toDouble()
@@ -440,8 +456,8 @@ class MacIPTVProvider : MainAPI() {
                     }
                     page_i++
                     val url =
-                        "$real_mainUrl/portal.php?type=itv&action=get_ordered_list&genre=$idGenre&force_ch_link_check=&fav=0&sortby=number&hd=0&p=$page_i&JsHttpRequest=1-xml&from_ch_id=0"
-                    response = app.get(url, headers = headerMac, timeout = 3)
+                        "$mainUrl/portal.php?type=itv&action=get_ordered_list&genre=$idGenre&force_ch_link_check=&fav=0&sortby=number&hd=0&p=$page_i&JsHttpRequest=1-xml&from_ch_id=0"
+                    response = app.get(url, headers = header, timeout = 3)
                     reponseJSON = if (response.text.takeLast(2) != "}}") {
                         tryParseJson<Root>("${response.text}}") ?: response.parsed()
                     } else {
@@ -474,7 +490,7 @@ class MacIPTVProvider : MainAPI() {
                             .replace("""HD""", "").trim()
                     LiveSearchResponse(
                         groupName,
-                        "$real_mainUrl/-${media.id}-",
+                        "$mainUrl/-${media.id}-",
                         name,
                         TvType.Live,
                         media.url_image + "?w=10&h=10",

@@ -1,0 +1,62 @@
+package com.lagradost.cloudstream3.iptvproviders
+
+import com.lagradost.cloudstream3.AcraApplication.Companion.getKey
+import com.lagradost.cloudstream3.AcraApplication.Companion.setKey
+import com.lagradost.cloudstream3.R
+import com.lagradost.cloudstream3.syncproviders.AccountManager
+import com.lagradost.cloudstream3.syncproviders.AuthAPI
+import com.lagradost.cloudstream3.syncproviders.InAppAuthAPI
+import com.lagradost.cloudstream3.syncproviders.InAppAuthAPIManager
+
+class MacIptvAPI(index: Int) : InAppAuthAPIManager(index) {
+    override val name = "Iptvbox"
+    override val idPrefix = "iptvbox"
+    override val icon = R.drawable.ic_baseline_extension_24
+    override val requiresUsername = true
+    override val requiresPassword = true
+    override val requiresServer = true
+    override val createAccountUrl = ""
+
+    companion object {
+        const val IPTVBOX_USER_KEY: String = "iptvbox_user"
+    }
+
+    override fun getLatestLoginData(): InAppAuthAPI.LoginData? {
+        return getKey(accountId, IPTVBOX_USER_KEY)
+    }
+
+    override fun loginInfo(): AuthAPI.LoginInfo? {
+        val data = getLatestLoginData() ?: return null
+        return AuthAPI.LoginInfo(name = data.username ?: data.server, accountIndex = accountIndex)
+    }
+
+    override suspend fun login(data: InAppAuthAPI.LoginData): Boolean {
+        if (data.server.isNullOrBlank()) return false // we require a server
+        switchToNewAccount()
+        setKey(accountId, IPTVBOX_USER_KEY, data)
+        registerAccount()
+        initialize()
+        AccountManager.inAppAuths
+
+        return true
+    }
+
+    override fun logOut() {
+        removeAccountKeys()
+        initializeData()
+    }
+
+    private fun initializeData() {
+        val data = getLatestLoginData() ?: run {
+            MacIPTVProvider.overrideUrl = null
+            MacIPTVProvider.loginMac = null
+            return
+        }
+        MacIPTVProvider.overrideUrl = data.server?.removeSuffix("/") + "/"
+        MacIPTVProvider.loginMac = data.password ?: ""
+    }
+
+    override suspend fun initialize() {
+        initializeData()
+    }
+}
