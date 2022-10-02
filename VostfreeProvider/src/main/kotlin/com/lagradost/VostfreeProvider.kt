@@ -49,13 +49,17 @@ class VostfreeProvider : MainAPI() {
                 if (type == "OAV") mediaType = TvType.OVA
                 when (type) {
                     "FILM" -> (
-                            newMovieSearchResponse( // réponse du film qui sera ajoutée à la liste map qui sera ensuite return
+                            newAnimeSearchResponse( // réponse du film qui sera ajoutée à la liste map qui sera ensuite return
                                 title,
                                 href,
                                 TvType.AnimeMovie,
                                 false
                             ) {
                                 this.posterUrl = mediaPoster
+                                this.dubStatus =
+                                    if (version.contains("VF")) EnumSet.of(DubStatus.Dubbed) else EnumSet.of(
+                                        DubStatus.Subbed
+                                    )
                                 // this.rating = rating
                             }
                             )
@@ -280,15 +284,17 @@ class VostfreeProvider : MainAPI() {
         val genre = select("div.genre").text()
         val title = select("div.info > div.title").text()
         val link = select("div.play > a").attr("href")
-        if (genre == "FILM") {
-            return newMovieSearchResponse(
+        if (genre.uppercase().contains( "FILM") ){
+            return newAnimeSearchResponse(
                 title,
                 link,
                 TvType.AnimeMovie,
                 false,
             ) {
                 this.posterUrl = posterUrl
-//this.quality = quality
+                this.dubStatus =
+                    if (subdub == "VF") EnumSet.of(DubStatus.Dubbed) else EnumSet.of(DubStatus.Subbed)
+
             }
 
         } else  // an Anime
