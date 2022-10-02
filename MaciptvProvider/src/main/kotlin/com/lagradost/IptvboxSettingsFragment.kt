@@ -1,4 +1,4 @@
-package com.lagradost.cloudstream3.iptvproviders
+package com.lagradost
 
 import android.content.res.ColorStateList
 import android.graphics.drawable.Drawable
